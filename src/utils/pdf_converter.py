@@ -27,11 +27,19 @@ class PDFConverter:
         
         # 回退到项目根目录
         root_path = os.path.dirname(os.path.dirname(application_path))
-        self.poppler_path = os.path.join(root_path, 'poppler', 'bin')
+        # 更新poppler路径以包含Library/bin
+        self.poppler_path = os.path.join(root_path, 'poppler', 'Library', 'bin')
         
         self.logger.info(f"Poppler path: {self.poppler_path}")
         if not os.path.exists(self.poppler_path):
             self.logger.warning(f"Poppler directory not found at {self.poppler_path}")
+        else:
+            # 验证必要的exe文件是否存在
+            required_files = ['pdftoppm.exe', 'pdfinfo.exe']
+            missing_files = [f for f in required_files 
+                           if not os.path.exists(os.path.join(self.poppler_path, f))]
+            if missing_files:
+                self.logger.warning(f"Missing required Poppler files: {missing_files}")
 
     def convert_pdf(self, pdf_path: str, output_dir: str) -> List[str]:
         """
