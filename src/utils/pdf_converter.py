@@ -20,15 +20,13 @@ class PDFConverter:
         # 设置poppler路径
         if getattr(sys, 'frozen', False):
             # 如果是打包后的可执行文件
-            application_path = os.path.dirname(sys.executable)
+            base_path = sys._MEIPASS
         else:
             # 如果是开发环境
-            application_path = os.path.dirname(os.path.abspath(__file__))
+            base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
-        # 回退到项目根目录
-        root_path = os.path.dirname(os.path.dirname(application_path))
-        # 更新poppler路径以包含Library/bin
-        self.poppler_path = os.path.join(root_path, 'poppler', 'Library', 'bin')
+        # 更新poppler路径
+        self.poppler_path = os.path.join(base_path, 'poppler', 'Library', 'bin')
         
         self.logger.info(f"Poppler path: {self.poppler_path}")
         if not os.path.exists(self.poppler_path):
@@ -37,7 +35,7 @@ class PDFConverter:
             # 验证必要的exe文件是否存在
             required_files = ['pdftoppm.exe', 'pdfinfo.exe']
             missing_files = [f for f in required_files 
-                           if not os.path.exists(os.path.join(self.poppler_path, f))]
+                        if not os.path.exists(os.path.join(self.poppler_path, f))]
             if missing_files:
                 self.logger.warning(f"Missing required Poppler files: {missing_files}")
 
