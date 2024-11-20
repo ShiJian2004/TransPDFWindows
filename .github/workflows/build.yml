@@ -1,105 +1,39 @@
-name: Build Windows x64 Application
+name: Build Windows Executable
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
-    
+
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python 3.11
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.9'
         architecture: 'x64'
-    
+
     - name: Install dependencies
       run: |
+        choco install poppler
+        choco install ghostscript
+        choco install imagemagick
         python -m pip install --upgrade pip
-        pip install PyQt6 pdf2image dashscope Pillow pyinstaller
+        pip install -r requirements.txt
         
-    - name: Download Poppler
+    - name: Build executable
       run: |
-        $url = "https://github.com/oschwartz10612/poppler-windows/releases/download/v23.11.0-0/Release-23.11.0-0.zip"
-        Invoke-WebRequest -Uri $url -OutFile "poppler.zip"
-        Expand-Archive -Path "poppler.zip" -DestinationPath "poppler"
-        
-    - name: Create spec file
-      run: |
-        @'
-        # -*- mode: python ; coding: utf-8 -*-
+        pyinstaller --noconfirm --onefile --noconsole --name "generator" main.py
 
-        import os
-        import sys
-        from pathlib import Path
-
-        # 获取项目根目录
-        root_dir = os.getcwd()
-
-        a = Analysis(
-            ["main.py"],
-            pathex=[root_dir],
-            binaries=[],
-            datas=[
-                (os.path.join(root_dir, "poppler"), "poppler")
-            ],
-            hiddenimports=[
-                "PyQt6.QtCore",
-                "PyQt6.QtGui",
-                "PyQt6.QtWidgets"
-            ],
-            hookspath=[],
-            hooksconfig={},
-            runtime_hooks=[],
-            excludes=[],
-            win_no_prefer_redirects=False,
-            win_private_assemblies=False,
-            noarchive=False,
-        )
-
-        pyz = PYZ(a.pure, a.zipped_data)
-
-        exe = EXE(
-            pyz,
-            a.scripts,
-            [],
-            exclude_binaries=True,
-            name="PDF OCR Tool",
-            debug=False,
-            bootloader_ignore_signals=False,
-            strip=False,
-            upx=True,
-            console=True,
-            disable_windowed_traceback=False,
-            target_arch=None,
-            codesign_identity=None,
-            entitlements_file=None,
-        )
-
-        coll = COLLECT(
-            exe,
-            a.binaries,
-            a.zipfiles,
-            a.datas,
-            strip=False,
-            upx=True,
-            upx_exclude=[],
-            name="PDF OCR Tool",
-        )
-        '@ | Out-File -FilePath "build.spec" -Encoding UTF8
-    
-    - name: Build with PyInstaller
-      run: |
-        pyinstaller build.spec --clean
-    
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: PDF_OCR-Windows-x64
-        path: "dist/PDF OCR Tool"
+        name: generator
+        path: dist/*.exe
